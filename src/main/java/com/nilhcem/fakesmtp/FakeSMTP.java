@@ -5,16 +5,20 @@ import java.awt.Toolkit;
 import java.net.InetAddress;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.util.Collection;
 
 import javax.swing.UIManager;
 
 import org.apache.commons.cli.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.subethamail.smtp.server.SMTPServer;
 
 import com.apple.eawt.Application;
 import com.nilhcem.fakesmtp.core.ArgsHandler;
 import com.nilhcem.fakesmtp.core.Configuration;
+import com.nilhcem.fakesmtp.core.exception.BindPortException;
+import com.nilhcem.fakesmtp.core.exception.OutOfRangePortException;
 import com.nilhcem.fakesmtp.core.exception.UncaughtExceptionHandler;
 import com.nilhcem.fakesmtp.gui.MainFrame;
 import com.nilhcem.fakesmtp.server.SMTPServerHandler;
@@ -122,5 +126,38 @@ public final class FakeSMTP {
 			return null;
 		}
 		return InetAddress.getByName(bindAddressStr);
+	}
+	
+	/**
+	 * Useful for usage in JUnit-tests
+	 * */
+	public static void up(int port, InetAddress bindAddress) throws BindPortException, OutOfRangePortException {
+		if (!SMTPServerHandler.INSTANCE.getSmtpServer().isRunning()) {
+			SMTPServerHandler.INSTANCE.startServer(port, bindAddress);
+		}
+	}
+	
+	/**
+	 * Useful for usage in JUnit-tests
+	 * */
+	public static void down() {
+		SMTPServer smtpServer = SMTPServerHandler.INSTANCE.getSmtpServer();
+		if (smtpServer.isRunning()) {
+			smtpServer.stop();
+		}
+	}
+	
+	/**
+	 * Useful for usage in JUnit-tests
+	 * */
+	public static Collection<String> getEmails() {
+		return SMTPServerHandler.INSTANCE.getMailSaver().getEmails();
+	}
+	
+	/**
+	 * Useful for usage in JUnit-tests
+	 * */
+	public static void deleteEmails() {
+		SMTPServerHandler.INSTANCE.getMailSaver().deleteEmails();
 	}
 }
