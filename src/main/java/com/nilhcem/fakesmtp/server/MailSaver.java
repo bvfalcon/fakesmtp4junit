@@ -17,12 +17,14 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Observable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Saves emails and notifies components so they can refresh their views with new data.
@@ -83,27 +85,35 @@ public final class MailSaver extends Observable {
 			notifyObservers(model);
 		}
 	}
+	
+	public Collection<String> getEmails() {
+		String filePath = String.format("%s", UIModel.INSTANCE.getSavePath());
+		String ext = Configuration.INSTANCE.get("emails.suffix").contains(".") ?
+				Configuration.INSTANCE.get("emails.suffix").substring(Configuration.INSTANCE.get("emails.suffix").indexOf(".")+1) :
+					Configuration.INSTANCE.get("emails.suffix");
+		return FileUtils.listFiles(new File(System.getProperty("user.dir"), filePath), new String[] { ext }, false)
+				.stream().map(o -> o.getAbsolutePath()).collect(Collectors.toList());
+	}
 
 	/**
 	 * Deletes all received emails from file system.
 	 */
 	public void deleteEmails() {
-		Map<Integer, String> mails = UIModel.INSTANCE.getListMailsMap();
 		if (ArgsHandler.INSTANCE.memoryModeEnabled()) {
 			return;
 		}
-		for (String value : mails.values()) {
-			File file = new File(value);
-			if (file.exists()) {
-				try {
-					if (!file.delete()) {
-						LOGGER.error("Impossible to delete file {}", value);
-					}
-				} catch (SecurityException e) {
-					LOGGER.error("", e);
-				}
+		Collection<String> files = getEmails();
+		files.forEach(o ->
+		{
+			try
+			{
+				FileUtils.forceDelete(new File(o));
 			}
-		}
+			catch (IOException e)
+			{
+				LOGGER.error("", e);
+			}
+		});
 	}
 
 	/**
