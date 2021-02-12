@@ -10,15 +10,14 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.Observable;
 import java.util.Observer;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import com.nilhcem.fakesmtp.core.I18n;
 import com.nilhcem.fakesmtp.model.EmailModel;
-import com.nilhcem.fakesmtp.model.UIModel;
 import com.nilhcem.fakesmtp.server.MailSaver;
 
 public class MailServerTest {
@@ -61,7 +60,7 @@ public class MailServerTest {
 				assertTrue(file.exists());
 
 				// Delete
-				UIModel.INSTANCE.getListMailsMap().put(0, model.getFilePath());
+				//UIModel.INSTANCE.getListMailsMap().put(0, model.getFilePath());
 				saver.deleteEmails();
 				assertFalse(file.exists());
 			}
@@ -93,7 +92,7 @@ public class MailServerTest {
 	}
 
 	private InputStream fromString(String str) throws UnsupportedEncodingException {
-		byte[] bytes = str.getBytes(I18n.UTF8);
+		byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
 		return new ByteArrayInputStream(bytes);
 	}
 }
