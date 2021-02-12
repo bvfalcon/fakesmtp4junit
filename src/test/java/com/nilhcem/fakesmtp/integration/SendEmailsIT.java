@@ -1,8 +1,11 @@
 package com.nilhcem.fakesmtp.integration;
 
-import com.nilhcem.fakesmtp.core.Configuration;
-import com.nilhcem.fakesmtp.core.test.TestConfig;
-import org.apache.commons.mail.*;
+import org.apache.commons.mail.Email;
+import org.apache.commons.mail.EmailAttachment;
+import org.apache.commons.mail.EmailException;
+import org.apache.commons.mail.HtmlEmail;
+import org.apache.commons.mail.MultiPartEmail;
+import org.apache.commons.mail.SimpleEmail;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -15,14 +18,14 @@ public final class SendEmailsIT {
 	@BeforeAll
 	public static void displayInfo() {
 		logger.info("Launching integration tests...");
-		logger.info("You need to run the project and launch the SMTP server on port {} before testing.", TestConfig.PORT_INTEGRATION_TESTS);
+		logger.info("You need to run the project and launch the SMTP server on port {} before testing.", 25);
 	}
 
 	@Test
 	public void sendSimpleTestEmail() throws EmailException {
 		Email email = new SimpleEmail();
-		email.setHostName(TestConfig.HOST);
-		email.setSmtpPort(TestConfig.PORT_INTEGRATION_TESTS);
+		email.setHostName("localhost");
+		email.setSmtpPort(25);
 		email.setStartTLSEnabled(true);
 		email.setFrom("user@gmail.com");
 		email.setSubject("Simple email");
@@ -35,15 +38,14 @@ public final class SendEmailsIT {
 	public void sendEmailWithAttachment() throws EmailException {
 		// Create the attachment
 		EmailAttachment attachment = new EmailAttachment();
-		attachment.setPath("src/main/resources" + Configuration.INSTANCE.get("application.icon.path"));
 		attachment.setDisposition(EmailAttachment.ATTACHMENT);
 		attachment.setDescription("Image file");
 		attachment.setName("icon.gif");
 
 		// Create the email message
 		MultiPartEmail email = new MultiPartEmail();
-		email.setHostName(TestConfig.HOST);
-		email.setSmtpPort(TestConfig.PORT_INTEGRATION_TESTS);
+		email.setHostName("localhsot");
+		email.setSmtpPort(25);
 		email.addTo("jdoe@somewhere.org", "John Doe");
 		email.setFrom("me@example.org", "Me");
 		email.setSubject("File attachment");
@@ -60,8 +62,8 @@ public final class SendEmailsIT {
 	public void sendHTMLFormattedEmail() throws EmailException {
 		// Create the email message
 		HtmlEmail email = new HtmlEmail();
-		email.setHostName(TestConfig.HOST);
-		email.setSmtpPort(TestConfig.PORT_INTEGRATION_TESTS);
+		email.setHostName("localhsot");
+		email.setSmtpPort(25);
 		email.addTo("jdoe@somewhere.org", "John Doe");
 		email.setFrom("me@example.org", "Me");
 		email.setSubject("HTML email");
@@ -79,8 +81,8 @@ public final class SendEmailsIT {
     @Test
     public void sendEmailWithBase64Subject() throws EmailException {
         Email email = new SimpleEmail();
-        email.setHostName(TestConfig.HOST);
-        email.setSmtpPort(TestConfig.PORT_INTEGRATION_TESTS);
+        email.setHostName("localhsot");
+		email.setSmtpPort(25);
         email.setFrom("spammy@example.org");
         email.addTo("foo@bar.com");
         email.setSubject("=?UTF-8?B?4pyIIEJvc3RvbiBhaXJmYXJlIGRlYWxzIC0gd2hpbGUgdGhleSBsYXN0IQ==?=");
@@ -91,8 +93,8 @@ public final class SendEmailsIT {
 	@Test
 	public void sendEmailToManyRecipientsWithTwoHeaders() throws EmailException {
 		Email email = new SimpleEmail();
-		email.setHostName(TestConfig.HOST);
-		email.setSmtpPort(TestConfig.PORT_INTEGRATION_TESTS);
+		email.setHostName("localhsot");
+		email.setSmtpPort(25);
 		email.setFrom("info@example.com");
 		email.addTo("test1@example.com");
 		email.addTo("test2@example.com");
@@ -107,8 +109,8 @@ public final class SendEmailsIT {
 	public void sendEmailWithDots() throws EmailException {
 		Email email = new SimpleEmail();
 		email.setDebug(true);
-		email.setHostName(TestConfig.HOST);
-		email.setSmtpPort(TestConfig.PORT_INTEGRATION_TESTS);
+		email.setHostName("localhsot");
+		email.setSmtpPort(25);
 		email.setFrom("user@example.com");
 		email.addTo("foo@example.com");
 		email.setSubject("Two dots separated with a new line");

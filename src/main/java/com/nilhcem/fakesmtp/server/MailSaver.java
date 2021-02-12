@@ -1,30 +1,26 @@
 package com.nilhcem.fakesmtp.server;
 
-import com.nilhcem.fakesmtp.core.ArgsHandler;
-import com.nilhcem.fakesmtp.core.Configuration;
-import com.nilhcem.fakesmtp.core.I18n;
-import com.nilhcem.fakesmtp.model.EmailModel;
-import com.nilhcem.fakesmtp.model.UIModel;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Observable;
+import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.IOException;
-import java.io.StringReader;
-import java.nio.charset.Charset;
-import java.text.SimpleDateFormat;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Observable;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
+import com.nilhcem.fakesmtp.model.EmailModel;
 
 /**
  * Saves emails and notifies components so they can refresh their views with new data.
@@ -40,6 +36,8 @@ public final class MailSaver extends Observable {
 	private static final Pattern SUBJECT_PATTERN = Pattern.compile("^Subject: (.*)$");
 
 	private final SimpleDateFormat dateFormat = new SimpleDateFormat("ddMMyyhhmmssSSS");
+	private String emailsDefaultDir = UUID.randomUUID().toString();
+	private String emailsExt = "eml";
 
 	/**
 	 * Saves incoming email in file system and notifies observers.
@@ -50,23 +48,6 @@ public final class MailSaver extends Observable {
 	 * @see com.nilhcem.fakesmtp.gui.MainPanel#addObservers to see which observers will be notified
 	 */
 	public void saveEmailAndNotify(String from, String to, InputStream data) {
-		List<String> relayDomains = UIModel.INSTANCE.getRelayDomains();
-
-		if (relayDomains != null) {
-			boolean matches = false;
-			for (String domain : relayDomains) {
-				if (to.endsWith(domain)) {
-					matches = true;
-					break;
-				}
-			}
-
-			if (!matches) {
-				LOGGER.debug("Destination {} doesn't match relay domains", to);
-				return;
-			}
-		}
-
 		// We move everything that we can move outside the synchronized block to limit the impact
 		EmailModel model = new EmailModel();
 		model.setFrom(from);
@@ -87,11 +68,7 @@ public final class MailSaver extends Observable {
 	}
 	
 	public Collection<String> getEmails() {
-		String filePath = String.format("%s", UIModel.INSTANCE.getSavePath());
-		String ext = Configuration.INSTANCE.get("emails.suffix").contains(".") ?
-				Configuration.INSTANCE.get("emails.suffix").substring(Configuration.INSTANCE.get("emails.suffix").indexOf(".")+1) :
-					Configuration.INSTANCE.get("emails.suffix");
-		return FileUtils.listFiles(new File(System.getProperty("user.dir"), filePath), new String[] { ext }, false)
+		return FileUtils.listFiles(new File(System.getProperty("user.dir"), emailsDefaultDir), new String[] { emailsExt }, false)
 				.stream().map(o -> o.getAbsolutePath()).collect(Collectors.toList());
 	}
 
@@ -99,21 +76,14 @@ public final class MailSaver extends Observable {
 	 * Deletes all received emails from file system.
 	 */
 	public void deleteEmails() {
-		if (ArgsHandler.INSTANCE.memoryModeEnabled()) {
-			return;
-		}
-		Collection<String> files = getEmails();
-		files.forEach(o ->
+		try
 		{
-			try
-			{
-				FileUtils.forceDelete(new File(o));
-			}
-			catch (IOException e)
-			{
-				LOGGER.error("", e);
-			}
-		});
+			FileUtils.forceDelete(new File(System.getProperty("user.dir"), emailsDefaultDir));
+		}
+		catch (IOException e)
+		{
+			LOGGER.error("", e);
+		}
 	}
 
 	/**
@@ -141,7 +111,7 @@ public final class MailSaver extends Observable {
 	 */
 	private String convertStreamToString(InputStream is) {
 		final long lineNbToStartCopy = 4; // Do not copy the first 4 lines (received part)
-		BufferedReader reader = new BufferedReader(new InputStreamReader(is, Charset.forName(I18n.UTF8)));
+		BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
 		StringBuilder sb = new StringBuilder();
 
 		String line;
@@ -165,10 +135,7 @@ public final class MailSaver extends Observable {
 	 * @return the path of the created file.
 	 */
 	private String saveEmailToFile(String mailContent) {
-		if (ArgsHandler.INSTANCE.memoryModeEnabled()) {
-			return null;
-		}
-		String filePath = String.format("%s%s%s", UIModel.INSTANCE.getSavePath(), File.separator,
+		String filePath = String.format("%s%s%s", emailsDefaultDir, File.separator,
 				dateFormat.format(new Date()));
 
 		// Create file
@@ -181,12 +148,12 @@ public final class MailSaver extends Observable {
 			} else {
 				iStr = "";
 			}
-			file = new File(filePath + iStr + Configuration.INSTANCE.get("emails.suffix"));
+			file = new File(filePath + iStr + "." + emailsExt);
 		}
 
 		// Copy String to file
 		try {
-			FileUtils.writeStringToFile(file, mailContent);
+			FileUtils.writeStringToFile(file, mailContent, StandardCharsets.UTF_8);
 		} catch (IOException e) {
 			// If we can't save file, we display the error in the SMTP logs
 			Logger smtpLogger = LoggerFactory.getLogger(org.subethamail.smtp.server.Session.class);
